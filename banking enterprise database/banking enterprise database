@@ -1,0 +1,58 @@
+create database banking;
+use banking;
+create table Branch(
+BranchName varchar(50), 
+BranchCity varchar(30), 
+Assests real, 
+primary key(BranchName)
+);
+create table Accounts(
+AccNo integer, 
+BranchName varchar(50), 
+primary key(AccNo),
+Balance real, 
+foreign key (BranchName) References Branch(BranchName)
+);
+create table Depositor(
+CustomerName varchar(20), 
+CustomerStreet varchar(50), 
+CustomerCity varchar(50), 
+primary key(CustomerName)
+);
+create table Loan(
+LoanNumber int, 
+BranchName varchar(50), 
+Amount real, 
+primary key (LoanNumber), 
+foreign key (BranchName) references Branch(BranchName)
+);
+create table Borrower(
+CustomerName varchar(20), 
+LoanNumber integer, 
+primary key(customername,loannumber),
+foreign key (CustomerName) references Depositor(CustomerName), 
+foreign key (LoanNumber) references Loan(LoanNumber)
+);
+show tables;
+insert into Branch
+values ("SBI_Chamrajpet","Bangalore","50000"),("SBI_ResidencyRoad","Bangalore","10000"),("SBI_ShivajiRoad","Bombay","20000"),("SBI_ParliamentRoad","Delhi","10000"),("SBI_JantarMantar","Delhi","20000");
+insert into Loan
+values (1, "SBI_Chamrajpet", 1000),(2, "SBI_ResidencyRoad", 2000),(3, "SBI_ShivajiRoad", 3000),(4, "SBI_ParliamentRoad", 4000),(5, "SBI_JantarMantar", 5000);
+insert into Accounts
+values (1, "SBI_Chamrajpet", 2000),(2, "SBI_ResidencyRoad", 5000),(3, "SBI_ShivajiRoad", 6000),(4, "SBI_ParliamentRoad", 9000),(5, "SBI_JantarMantar", 8000),(6, "SBI_ShivajiRoad", 8000),(8, "SBI_ResidencyRoad", 4000),(9, "SBI_ParliamentRoad", 3000),(10, "SBI_ResidencyRoad", 5000),(11, "SBI_JantarMantar", 2000);
+insert into Depositor
+values ("Avinash","Bull_Temple_Road","Bangalore"),("Dinesh","Bannergatta_Road","Bangalore"),("Mohan","NationalCollege_Road","Bangalore"),("Nikil","Akbar_Road","Delhi"),("Ravi","Prithviraj_Road","Delhi");
+insert into Borrower
+values ("Avinash",1),("Dinesh",2),("Nikil",4),("Ravi",5),("Avinash",3),("Nikil",5),("Dinesh",1);
+select * from Branch;
+select * from Accounts;
+select * from Depositor;
+select * from Borrower;
+select * from Loan;
+
+select CustomerName from Borrower B, Accounts A where B.LoanNumber=A.AccNo and A.BranchName="SBI_ParliamentRoad" group by B.CustomerName having count(B.CustomerName) >= 2;
+
+select B.CustomerName from Accounts A, Branch BR, Borrower B where BR.BranchName=A.BranchName and A.AccNo=B.LoanNumber and BR.BranchCity="Bangalore" group by B.CustomerName having count(distinct BR.BranchName)=(select count(BranchName) from Branch where BranchCity="Bangalore");
+
+delete from Accounts where BranchName in(select BranchName from Branch where BranchCity="Bangalore");
+commit;
