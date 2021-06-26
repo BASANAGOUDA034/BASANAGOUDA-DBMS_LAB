@@ -1,0 +1,166 @@
+create database airline_db;
+use airline_db;
+create table Flights(
+	flno int primary key,
+	from_city varchar(20),
+    to_city varchar(20),
+    distance int,
+    departs datetime,
+    arrives datetime,
+    price int);
+
+create table Aircraft(
+	aid int primary key,
+	aname varchar(20),
+    cruising_range int);
+    
+create table Employees(
+	eid int primary key,
+    ename varchar(20),
+	salary int);
+
+create table Certified(
+	eid int,
+    aid int,
+    primary key(eid,aid),
+    foreign key(eid) references Employees(eid),
+    foreign key(aid) references Aircraft(aid)
+    );
+insert into Flights 
+	value
+		(101,"Bangalore","Delhi",2500,"2005-05-13 07:15:31","2005-05-13 17:15:31",5000),
+        (102,'Bangalore','Lucknow',3000,'2005-05-13 07:15:31','2005-05-13 11:15:31',6000),
+		(103,'Lucknow','Delhi',500,'2005-05-13 12:15:31',' 2005-05-13 17:15:31',3000),
+        (107,'Bangalore','Frankfurt',8000,'2005-05-13 07:15:31','2005-05-13 22:15:31',60000),
+        (104,'Bangalore','Frankfurt',8500,'2005-05-13 07:15:31','2005-05-13 23:15:31',75000),
+        (105,'Kolkata','Delhi',3400,'2005-05-13 07:15:31','2005-05-13 09:15:31',7000);
+insert into Aircraft 
+	values
+		(101,"747",3000),
+        (102,"Boeing",900),
+        (103,"647",800),
+        (104,"Dreamliner",10000),
+        (105,"Boeing",3500),
+        (106,"707",1500),
+        (107,"Dream",120000);
+        
+insert into Employees
+	values
+		(701,"A",50000),
+        (702,"B",100000),
+        (703,"C",150000),
+        (704,"D",90000),
+        (705,"E",40000),
+        (706,"F",60000),
+        (707,"G",90000);
+        
+insert into Certified
+	values
+		(701,101),
+        (701,102),
+        (701,106),
+        (701,105),
+        (702,104),
+        (703,104),
+        (704,104),
+        (702,107),
+        (703,107),
+        (704,107),
+        (702,101),
+        (703,105),
+        (704,105),
+        (705,103);
+
+
+select * from Flights;
+select * from Aircraft;
+select * from Certified;
+select * from Employees;
+
+-- Find the names of aircraft such that all pilots certified to operate them have salaries 
+-- more than Rs.80,000.
+
+select a.aname,count(*),c.aid from Aircraft a,Certified c where a.aid=c.aid group by c.aid;
+select count(*),a1.aname,c1.aid from Aircraft a1,Certified c1,Employees e 
+        where 
+            a1.aid=c1.aid and 
+            c1.eid=e.eid and 
+            e.salary>80000
+            group by c1.aid;
+-- final answer
+		select a.aname from Aircraft a,Certified c
+			where a.aid=c.aid
+			group by c.aid
+			having count(*)=(
+				select count(*) from Aircraft a1,Certified c1,Employees e 
+				where 
+					a1.aid=c.aid and 
+					a1.aid=c1.aid and 
+					c1.eid=e.eid and 
+					e.salary>80000
+					group by c1.aid);
+-- For each pilot who is certified for more than three aircrafts, find the eid and the 
+-- maximum cruisingrange of the aircraft for which she or he is certified.
+select e.eid,max(a.cruising_range) from Aircraft a,Certified c,Employees e
+	where a.aid=c.aid and
+    c.eid=e.eid
+    group by c.eid
+    having count(*)>3;
+    
+-- Find the names of pilots whose salary is less than the price of the cheapest route from 
+-- Bengaluru to Frankfurt
+select e.ename from Employees e 
+	where
+		e.salary<(
+			select min(price) from Flights 
+				where from_city="Bangalore" and to_city="Frankfurt");
+                
+-- For all aircraft with cruisingrange over 1000 Kms, find the name of the aircraft and 
+-- the average salary of all pilots certified for this aircraft
+select a.aname,avg(e.salary) as Average_Salary_of_Pilot from Aircraft a,Employees e,Certified c
+	where 
+		a.cruising_range>1000 and
+		a.aid=c.aid and
+        c.eid=e.eid
+	group by a.aid;
+    
+-- Find the names of pilots certified for some Boeing aircraft.
+select distinct e.ename from Employees e,Certified c,Aircraft a
+	where 
+		a.aname="Boeing" and
+        a.aid=c.aid and
+        c.eid=e.eid;
+        
+-- Find the aids of all aircraft that can be used on routes from Bengaluru to New Delhi
+select aid,aname from Aircraft 
+	where 
+		cruising_range>
+			(select distance from Flights where
+				from_city="Bangalore" and
+				to_city="Delhi");
+--  A customer wants to travel from Bangalore to Delhi with no more than two 
+-- changes of flight. List the choice of departure times from Bangalore if the 
+-- customer wants to arrive in Delhi by 6 p.m
+select * from Flights 
+	where flno in 
+		(select f1.flno from Flights f1 
+			where 
+				f1.from_city="Bangalore" and 
+                f1.flno in (Select f2.flno from Flights f2 where f2.from_city=f1.to_city)
+                or f1.from_city="Bangalore" and f1.to_city="Delhi");
+Select f2.flno from Flights f2 where f2.from_city="Lucknow";
+select * from Flights where from_city="Bangalore";
+select * from Flights where from_city="Lucknow";
+select * from Flights f1 
+	where 
+		f1.from_city="Bangalore" and 
+		f1.to_city="Delhi" and 
+        f1.arrives<="18:00:00"
+        union 
+        (select * from Flights f2 
+			where 
+				f2.from_city="Bangalore" and 
+                f2.to_city in (Select f3.from_city from Flights f3 where f3.to_city="Delhi")
+                union (select * from Flights f4 where f3.from_city=f4.from_city and where f3.to_city="Delhi")
+		)
+        ;
