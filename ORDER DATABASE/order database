@@ -1,0 +1,74 @@
+create database order_db;
+use order_db;
+create table Salesman 
+	(salesman_id int primary key not null,
+		name varchar(25),
+        city varchar(25),
+        commission real);
+create table Customer 
+	(customer_id int primary key not null,
+		cust_name varchar(25),
+        city varchar(25),
+        grade int,
+        salesman_id int,
+        foreign key(salesman_id) references Salesman(salesman_id)on delete set null);
+create table Orders(
+	order_no int,
+    purchase_amt real,
+    ord_date date,
+    customer_id int,
+    salesman_id int,
+	foreign key(customer_id) references Customer(customer_id) on delete cascade,
+    foreign key(salesman_id) references Salesman(salesman_id) on delete cascade);
+    
+insert into salesman values
+	(1000,"JHON","BANGALORE",25),
+    (2000,"RAVI","BANGALORE",20),
+    (3000,"KUMAR","MYSORE",15),
+    (4000,"SMITH","DELHI",30),
+    (5000,"HARSHA","HYDRABAD",15);
+
+insert into Customer values
+	(10,"PREETHI","BANGALORE",100,1000),
+    (11,"VIVEK","MANGALORE",300,1000),
+    (12,"BHASKAR","CHENNAI",400,2000),
+    (13,"CHETHAN","BANGALORE",200,2000),
+    (14,"MAMATHA","BANGALORE",400,3000);
+    
+insert into Orders values
+	(50,5000,"2017-05-04",10,1000),
+    (51,450,"2017-01-20",10,2000),
+    (52,1000,"2017-02-24",13,2000),
+    (53,3500,"2017-04-13",14,3000),
+    (54,550,"2017-03-09",12,2000);
+    
+--  Count the customers with grades above Bangalore’s average.
+select count(*) from Customer 
+	where grade>(select avg(grade) from Customer where city="BANGALORE");
+    
+--  Find the name and numbers of all salesmen who have more than one customer
+select s.salesman_id,s.name from Salesman s,Customer c 
+	where
+		s.salesman_id=c.salesman_id
+        group by c.salesman_id
+        having count(*)>1;
+-- List all salesmen and indicate those who have and don’t have customers in their cities
+(select s.salesman_id,s.name,c.cust_name,s.city from Salesman s,Customer c where s.city=c.city) 
+	union 
+    (select s.salesman_id,s.name,"No Match",s.city from Salesman s 
+		where
+        s.city not in (select city from Customer));
+        
+
+-- Create a view that finds the salesman who has the customer with the highest order of a day. 
+create view HighestOrder as
+	select o.ord_date,s.salesman_id,s.name from Salesman s,Orders o
+		where s.salesman_id=o.salesman_id and
+        o.purchase_amt= (select max(purchase_amt) from Orders where ord_date=o.ord_date);
+select * from HighestOrder;
+-- Demonstrate the DELETE operation by removing salesman with id 1000. All his orders must 
+-- also be deleted
+delete from Salesman where salesman_id=1000;
+select * from Salesman;
+select * from Orders;
+select * from Customer;
