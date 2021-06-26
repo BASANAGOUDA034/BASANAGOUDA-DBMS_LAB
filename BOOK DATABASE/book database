@@ -1,0 +1,123 @@
+create database book_db;
+use book_db;
+
+CREATE TABLE Publisher 
+	(name VARCHAR(20) PRIMARY KEY, 
+	phone real, 
+	address VARCHAR(20));
+
+CREATE TABLE Book 
+	(book_id int PRIMARY KEY, 
+	title VARCHAR(20), 
+	pub_year VARCHAR(20), 
+	publisher_name varchar(20) REFERENCES Publisher (name) ON DELETE CASCADE);
+
+CREATE TABLE Book_Authors 
+	(author_name VARCHAR(20), 
+	book_id int REFERENCES Book (book_id) ON DELETE CASCADE, 
+	PRIMARY KEY (book_id, author_name));
+    
+CREATE TABLE Library_Branch 
+	(branch_id int PRIMARY KEY, 
+	branch_name VARCHAR(50), 
+	address VARCHAR(50));
+    
+CREATE TABLE Book_Copies 
+	(no_of_copies int, 
+	book_id int REFERENCES Book(book_id) ON DELETE CASCADE, 
+	branch_id int REFERENCES Library_Branch (branch_id) ON DELETE CASCADE, 
+	PRIMARY KEY (book_id, branch_id));
+
+CREATE TABLE Card 
+	(card_no int PRIMARY KEY); 
+CREATE TABLE Book_Lending 
+	(date_out DATE, 
+	due_date DATE, 
+	book_id int REFERENCES book (book_id) ON DELETE CASCADE, 
+	branch_id int REFERENCES Library_Branch (branch_id) ON DELETE CASCADE, 
+	card_no int REFERENCES Card (card_no) ON DELETE CASCADE, 
+	PRIMARY KEY (book_id, branch_id, card_no));
+    
+INSERT INTO Publisher VALUES 
+	("MCGRAW-HILL", 9989076587, "BANGALORE"),
+    ("PEARSON",9889076565,"NEWDELHI"),
+    ("RANDOM HOUSE",7455679345,"HYDRABAD"),
+    ("HACHETTE LIVRE",8970862340,"CHENNAI"),
+    ("GRUPO PLANETA",7756120238,"BANGALORE"); 
+
+INSERT INTO Book VALUES 
+	(1,"DBMS","JAN-2017","MCGRAW-HILL"),
+    (2,"ADBMS","JUN-2016","MCGRAW-HILL"),
+    (3,"CN","SEP-2016","PEARSON"),
+    (4,"CG","SEP-2015","GRUPO PLANETA"),
+    (5,"OS","MAY-2016","PEARSON"); 
+    
+INSERT INTO Book_Authors VALUES 
+	("NAVATHE", 1),
+    ("NAVATHE", 2),
+    ("TANENBAUM", 3),
+    ("EDWARD ANGEL", 4),
+    ("GALVIN", 5); 
+
+INSERT INTO Library_Branch VALUES 
+	(10,"RR NAGAR","BANGALORE"),
+    (11,"RNSIT","BANGALORE"),
+    (12,"RAJAJI NAGAR","BANGALORE"),
+    (13,"NITTE","MANGALORE"),
+    (14,"MANIPAL","UDUPI"); 
+
+INSERT INTO Book_Copies VALUES 
+	(10, 1, 10),
+    (5, 1, 11),
+    (2, 2, 12),
+    (5, 2, 13),
+    (7, 3, 14),
+    (1, 5, 10),
+    (3, 4, 11); 
+
+INSERT INTO Card VALUES 
+	(100),
+    (101),
+    (102),
+    (103),
+    (104); 
+
+INSERT INTO Book_Lending VALUES 
+	("2017-01-01","2017-06-01", 1, 10, 101),
+    ("2017-01-11","2017-03-11", 3, 14, 101),
+    ("2017-02-21","2017-04-21", 2, 13, 101),
+    ("2017-03-17","2017-07-15", 4, 11, 101),
+    ("2017-04-12","2017-05-12", 1, 11, 104); 
+
+-- Retrieve details of all books in the library – id, title, name of publisher, 
+-- authors, number of copies in each branch, etc
+select l.branch_id,b.book_id,b.title,p.name,ba.author_name,bc.no_of_copies from Library_Branch l, Book_Copies bc,Publisher p,Book b,Book_Authors ba
+	where 
+		l.branch_id=bc.branch_id and
+        bc.book_id=b.book_id and
+        b.book_id=ba.book_id and
+        b.publisher_name=p.name;
+        
+-- Get the particulars of borrowers who have borrowed more than 3 books, but 
+-- from Jan 2017 to Jun 2017
+Select card_no from Book_Lending
+	where date_out between "2017-01-01" and "2017-06-30"
+    group by card_no
+    having count(*)>3;
+    
+-- Delete a book in BOOK table. Update the contents of other tables to reflect 
+-- this data manipulation operation
+delete from Book where book_id=1;
+
+-- Partition the BOOK table based on year of publication. Demonstrate its 
+-- working with a simple query.
+create view Year_Publishing as
+	select pub_year,publisher_name,title from Book;
+select * from Year_Publishing;
+--  Create a view of all books and its number of copies that are currently 
+-- available in the Library
+create view Book_Copies_Library as
+	select b.title,bc.no_of_copies,bl.branch_name from Library_Branch bl,Book_Copies bc,Book b
+		where bl.branch_id=bc.branch_id and
+        bc.book_id=b.book_id;
+select * from Book_Copies_Library;
